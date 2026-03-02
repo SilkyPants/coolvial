@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "mcu"
+		},
+		{
+			"path": "app"
+		},
+		{
+			"path": "assets"
+		},
+		{
+			"path": "scripts"
+		},
+		{
+			"path": ".",
+			"name": "root"
+		},
+	],
+	"settings": {
+		"files.exclude": {
+			// these below hide the added folders from the "root_dir" directory in the explorer view
+			"mcu": true,
+			"app": true,
+			"assets": true,
+			"scripts": true,
+			// Hide the Python venv
+			"venv": true,
+			// in this section it is needed to add all of the files and directories that are 
+			// located in the workspace root but are not needed in the explorer view
+			// "ignore_me.txt": true
+			"*.code-workspace": true,
+		},
+	}
+}

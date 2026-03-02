@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Temperature Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <button class="mode-toggle" onclick="toggleMode()">🌓 Mode</button>
+    
+        <div class="card">
+            <h2><span id="status" class="status-dot"></span>Live Monitor</h2>
+            <div class="stat-grid">
+                <div><div id="curTemp" class="stat-val">--</div><div>Current</div></div>
+                <div><div id="avgTemp" class="stat-val">--</div><div>Rolling Avg</div></div>
+            </div>
+            <div class="sync-label">Last Logged: <span id="lastSyncTime">-</span></div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Temperature Trend</h2>
+                <div class="filter-group">
+                    <input type="radio" name="range" id="rHour" value="hour" checked onclick="updateChartRange()">
+                    <label for="rHour">1H</label>
+                    <input type="radio" name="range" id="rDay" value="day" onclick="updateChartRange()">
+                    <label for="rDay">24H</label>
+                    <input type="radio" name="range" id="rWeek" value="week" onclick="updateChartRange()">
+                    <label for="rWeek">7D</label>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="tChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h2>Data Log</h2>
+            <div style="overflow-x:auto;">
+                <table id="tempTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">Date & Time ↕</th>
+                            <th onclick="sortTable(1)">Temp ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="pagination-container">
+                <button id="prevBtn" class="page-btn" onclick="changePage(-1)">← Newer</button>
+                <span id="pageInfo">Page 1</span>
+                <button id="nextBtn" class="page-btn" onclick="changePage(1)">Older →</button>
+            </div>
+
+            <button class="download-btn" onclick="downloadCSV()">📥 Download CSV</button>
+        </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
