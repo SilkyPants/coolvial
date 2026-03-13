@@ -43,6 +43,32 @@ fs::LittleFSFS StorageFS = fs::LittleFSFS();
 #define FILE_HOME_INDEX "/index.html"
 #define FILE_LOGS "/logs.csv"
 
+struct Temperatures
+{
+  float blockTemp = 0;
+  float internalTemp = 0;
+  float ambientTemp = 0;
+
+  Temperatures &operator+=(const Temperatures &rhs)
+  {
+    this->blockTemp += rhs.blockTemp;
+    this->internalTemp += rhs.internalTemp;
+    this->ambientTemp += rhs.ambientTemp;
+    return *this;
+  }
+
+  Temperatures operator/(const float &scalar) const
+  {
+    Temperatures result;
+
+    result.blockTemp = this->blockTemp / scalar;
+    result.internalTemp = this->internalTemp / scalar;
+    result.ambientTemp = this->ambientTemp / scalar;
+
+    return result;
+  }
+};
+
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000);
 WebServer server(80);
@@ -51,7 +77,7 @@ const int SAMPLE_INTERVAL = 2000;       // 2 seconds
 const int LOG_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const int BUFFER_SIZE = 50;             // Number of samples to average
 
-float tempBuffer[BUFFER_SIZE];
+Temperatures tempsBuffer[BUFFER_SIZE];
 int bufferIndex = 0;
 unsigned long lastSampleTime = 0;
 unsigned long lastLogTime = 0;
@@ -68,16 +94,9 @@ DallasTemperature sensors(&oneWire);
 // F designates Full Buffer mode for smoother graphics
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, /* reset=*/U8X8_PIN_NONE, OLED_SCL, OLED_SDA);
 
-struct Temperatures
-{
-  float blockTemp = 0;
-  float internalTemp = 0;
-  float ambientTemp = 0;
-};
-
-void addSample(float val);
-float getAverage();
-void logToFS(float avgTemp);
+void addSample(Temperatures val);
+Temperatures getAverages();
+void logToFS(Temperatures avgTemps);
 Temperatures readProbes();
 
 void setupRouting();
@@ -172,13 +191,13 @@ void setup()
 
   sensors.requestTemperatures();
   delay(750); // Wait for first conversion
-  float initialTemp = readProbes().blockTemp;
+  Temperatures initialTemp = readProbes();
   for (int i = 0; i < BUFFER_SIZE; i++)
   {
-    tempBuffer[i] = initialTemp;
+    tempsBuffer[i] = initialTemp;
   }
-  
-  logToFS(getAverage());
+
+  logToFS(getAverages());
 
   Serial.println("System Initialized");
 }
@@ -233,7 +252,7 @@ void loop()
   // 2. Low-frequency Logging (Every X minutes)
   if (currentMillis - lastLogTime >= LOG_INTERVAL)
   {
-    float average = getAverage();
+    Temperatures average = getAverages();
     logToFS(average);
     lastLogTime = currentMillis;
     updateDisplay = true;
@@ -244,17 +263,17 @@ void loop()
   if (!isSleeping && updateDisplay)
   {
     // Update Serial
-    Serial.print("Temp: ");
-    Serial.println(_lastTemps.blockTemp);
-    Serial.print("Avg: ");
-    Serial.println(getAverage());
+    // Serial.print("Temp: ");
+    // Serial.println(_lastTemps.blockTemp);
+    // Serial.print("Avg Block: ");
+    // Serial.println(getAverages());
 
     u8g2.firstPage();
     do
     {
       // 1. Average Temp Line (Top)
       char avgBufferStr[16];
-      sprintf(avgBufferStr, "Avg Temp: %.1f °C", getAverage());
+      sprintf(avgBufferStr, "Avg Temp: %.1f °C", getAverages());
       u8g2.setFont(u8g2_font_ncenB08_tf); // Choose a nice font
       u8g2.drawUTF8(0, 12, avgBufferStr);
 
@@ -295,18 +314,18 @@ void loop()
   delay(2);
 }
 
-void addSample(float val)
+void addSample(Temperatures val)
 {
-  tempBuffer[bufferIndex] = val;
+  tempsBuffer[bufferIndex] = val;
   bufferIndex = (bufferIndex + 1) % BUFFER_SIZE; // Circular wrap-around
 }
 
-float getAverage()
+Temperatures getAverages()
 {
-  float sum = 0;
+  Temperatures sum;
   for (int i = 0; i < BUFFER_SIZE; i++)
   {
-    sum += tempBuffer[i];
+    sum += tempsBuffer[i];
   }
   return sum / BUFFER_SIZE;
 }
@@ -321,7 +340,7 @@ Temperatures readProbes()
   return temps;
 }
 
-void logToFS(float avgTemp)
+void logToFS(Temperatures avgTemps)
 {
   File file = StorageFS.open(FILE_LOGS, FILE_APPEND, true);
   if (file)
@@ -333,10 +352,14 @@ void logToFS(float avgTemp)
     // 2. Save: Timestamp, Temperature
     file.print(now);
     file.print(",");
-    file.println(avgTemp);
+    file.print(avgTemps.blockTemp);
+    file.print(",");
+    file.print(avgTemps.internalTemp);
+    file.print(",");
+    file.println(avgTemps.ambientTemp);
 
     file.close();
-    Serial.printf("Logged to FS: %lu, %.2f\n", now, avgTemp);
+    Serial.printf("Logged to FS: %lu, %.2f, %.2f, %.2f\n", now, avgTemps.blockTemp, avgTemps.internalTemp, avgTemps.ambientTemp);
   }
   else
   {
@@ -378,7 +401,7 @@ void handleDataAPI()
 {
   JsonDocument doc;
   doc["lastTemp"] = _lastTemps.blockTemp;
-  doc["avgTemp"] = getAverage();
+  doc["avgTemp"] = getAverages().blockTemp;
   doc["timestamp"] = lastLoggedTime; // The timestamp of the ACTUAL last save
   doc["logVal"] = lastLoggedValue;   // The value that was actually saved to CSV
 
