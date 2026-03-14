@@ -54,11 +54,6 @@ void WebManager::setupRoutes()
         Temperatures live = tempMgr->readInstant();
         Temperatures avg = tempMgr->getRollingAverage();
 
-        // Legacy ones from the HTML
-        doc["lastTemp"] = live.blockTemp;
-        doc["avgTemp"] = avg.blockTemp;
-        doc["logVal"] = lastLoggedTemps.blockTemp;  // The value that was actually saved to CSV
-
         doc["timestamp"] = lastLoggedTime;          // The timestamp of the ACTUAL last save
         doc["lastLoggedTemps"] = lastLoggedTemps;
 

@@ -13,14 +13,18 @@ async function init() {
     allDataRows = [];
     const chartLabels = [];
     const chartData = [];
+    const chartInternalData = [];
+    const chartAmbientData = [];
 
     // Parse CSV into array
     lines.forEach((line) => {
-      const [ts, val] = line.split(",");
+      const [ts, temp, internalTemp, ambientTemp] = line.split(",");
       if (!ts) return;
       allDataRows.push({
         ts: parseInt(ts),
-        val: parseFloat(val),
+        temp: parseFloat(temp),
+        internalTemp: parseFloat(internalTemp),
+        ambientTemp: parseFloat(ambientTemp),
         timeStr: new Date(ts * 1000).toLocaleString(),
       });
     });
@@ -39,11 +43,13 @@ async function init() {
       const chartSlice = [...allDataRows].slice(0, 30).reverse();
       chartSlice.forEach((row) => {
         chartLabels.push(new Date(row.ts * 1000).toLocaleTimeString());
-        chartData.push(row.val);
+        chartData.push(row.temp);
+        chartInternalData.push(row.internalTemp);
+        chartAmbientData.push(row.ambientTemp);
       });
     }
 
-    setupChart(chartLabels, chartData);
+    setupChart(chartLabels, chartData, chartInternalData, chartAmbientData);
     renderTable();
   } catch (e) {
     console.error("Load failed", e);
@@ -60,7 +66,7 @@ function renderTable() {
 
   pageRows.forEach((row) => {
     const tr = tbody.insertRow();
-    tr.innerHTML = `<td>${row.timeStr}</td><td>${row.val.toFixed(2)} °C</td>`;
+    tr.innerHTML = `<td>${row.timeStr}</td><td>${row.temp.toFixed(2)} °C</td><td>${row.internalTemp.toFixed(2)} °C</td><td>${row.ambientTemp.toFixed(2)} °C</td>`;
   });
 
   // Update Pagination UI
@@ -115,13 +121,14 @@ async function updateLive() {
       console.log("New log detected via API!");
       lastLogTimestamp = info.timestamp;
 
-      const newTemp = info.logVal;
       const timeObj = new Date(info.timestamp * 1000);
       const timeStr = timeObj.toLocaleString();
 
       allDataRows.unshift({
         ts: info.timestamp,
-        val: newTemp,
+        temp: info.current.block,
+        internalTemp: info.current.internal,
+        ambientTemp: info.current.ambient,
         timeStr: timeStr,
       });
 
@@ -141,7 +148,7 @@ async function updateLive() {
   }
 }
 
-function setupChart(l, d) {
+function setupChart(l, blockData, internalData, ambientData) {
   const ctx = document.getElementById("tChart").getContext("2d");
   tChart = new Chart(ctx, {
     type: "line",
@@ -150,8 +157,24 @@ function setupChart(l, d) {
       datasets: [
         {
           label: "Temp (°C)",
-          data: d,
+          data: blockData,
           borderColor: "#4bc0c0",
+          backgroundColor: "rgba(75, 192, 192, 0.1)",
+          fill: true,
+          tension: 0.3,
+        },
+        {
+          label: "Internal Temp (°C)",
+          data: internalData,
+          borderColor: "#36d465",
+          backgroundColor: "rgba(75, 192, 192, 0.1)",
+          fill: true,
+          tension: 0.3,
+        },
+        {
+          label: "Ambient Temp (°C)",
+          data: ambientData,
+          borderColor: "#a841e4",
           backgroundColor: "rgba(75, 192, 192, 0.1)",
           fill: true,
           tension: 0.3,
@@ -194,6 +217,8 @@ function updateChartRange() {
 
   const labels = [];
   const data = [];
+  const internalData = [];
+  const ambientData = [];
 
   filtered.forEach((row, index) => {
     if (index % sampleRate === 0) {
@@ -204,12 +229,16 @@ function updateChartRange() {
           ? date.toLocaleTimeString()
           : date.toLocaleDateString() + " " + date.getHours() + ":00";
       labels.push(label);
-      data.push(row.val);
+      data.push(row.temp);
+      internalData.push(row.internalTemp);
+      ambientData.push(row.ambientTemp);
     }
   });
 
   tChart.data.labels = labels;
   tChart.data.datasets[0].data = data;
+  tChart.data.datasets[1].data = internalData;
+  tChart.data.datasets[2].data = ambientData;
 
   // Adjust Y-Axis for the specific range found in this data
   tChart.options.scales.y.min = Math.floor(Math.min(...data) - 2);
