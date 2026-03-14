@@ -34,6 +34,13 @@ void ThermalController::updatePID(float currentBlock, float currentAmbient) {
 }
 
 void ThermalController::drivePeltier(double pwm) {
+    // Add a "Deadband" - if it's too small to matter, kill it
+    if (abs(pwm) < 5) { 
+        digitalWrite(pinIn1, LOW);
+        digitalWrite(pinIn2, LOW);
+        return;
+    }
+
     if (pwm > 0) { // Cooling Mode
         analogWrite(pinIn1, (int)pwm);
         digitalWrite(pinIn2, LOW);

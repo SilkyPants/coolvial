@@ -6,7 +6,7 @@ fs::LittleFSFS StorageFS = fs::LittleFSFS();
 bool FileSystem::begin()
 {
     Serial.println("Mounting LittleFS...");
-    if (!StaticFS.begin(true, MOUNT_STATIC, 5, MOUNT_NAME_STATIC))
+    if (!StaticFS.begin(false, MOUNT_STATIC, 5, MOUNT_NAME_STATIC))
     {
         Serial.println("LittleFS Static Data Mount Failed");
         return false;

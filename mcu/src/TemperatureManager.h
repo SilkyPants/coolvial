@@ -45,8 +45,8 @@ enum class DiscoveryState { IDLE, SEARCHING, SUCCESS, FAILED };
 class TemperatureManager
 {
 private:
-    OneWire *oneWire;
-    DallasTemperature *sensors;
+    OneWire oneWire;
+    DallasTemperature sensors;
     Preferences prefs;
 
     DeviceAddress blockAddr, internalAddr, ambientAddr;
@@ -74,7 +74,8 @@ public:
     void updateDiscovery();
     DiscoveryState getDiscoveryState() { return _state; }
 
-    Temperatures readInstant();
+    Temperatures readStored();
+    void requestNewScan() { sensors.requestTemperatures(); };
     void addSample(Temperatures t);
     Temperatures getRollingAverage();
 };

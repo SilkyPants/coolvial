@@ -255,18 +255,16 @@ function toggleMode() {
 }
 
 function downloadCSV() {
-  let csv = "Date,Temp\n";
-  document.querySelectorAll("#logBody tr").forEach((tr) => {
-    csv +=
-      tr.cells[0].innerText +
-      "," +
-      tr.cells[1].innerText.replace(" °C", "") +
-      "\n";
+  // Build from the internal data array, not the HTML elements
+  let csv = "Timestamp,Date,Block Temp,Internal Temp,Ambient Temp\n";
+  allDataRows.forEach(row => {
+    csv += `${row.ts},${row.timeStr},${row.temp},${row.internalTemp},${row.ambientTemp}\n`;
   });
+  
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "temp_data.csv";
+  a.download = `coolvial_logs_${Date.now()}.csv`;
   a.click();
 }
 

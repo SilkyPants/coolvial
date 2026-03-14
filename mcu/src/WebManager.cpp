@@ -9,7 +9,6 @@
 #define FILE_HOME_INDEX "index.html"
 #define FILE_LOGS "logs.csv"
 
-
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000);
 
@@ -45,13 +44,21 @@ void WebManager::setupRoutes()
         // AsyncWebServer handles the file streaming in the background automatically
         request->send(StorageFS, "/" FILE_LOGS, "text/csv"); });
 
+    server->on("/api/logs/clear", HTTP_POST, [](AsyncWebServerRequest *request)
+               {
+        if (StorageFS.remove("/" FILE_LOGS)) {
+            request->send(200, "application/json", "{\"status\":\"cleared\"}");
+        } else {
+            request->send(500, "application/json", "{\"error\":\"failed to delete\"}");
+        } });
+
     // 3a. The Dynamic JSON API endpoint
     server->on("/api/data", HTTP_GET, [this](AsyncWebServerRequest *request)
                {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         JsonDocument doc;
         
-        Temperatures live = tempMgr->readInstant();
+        Temperatures live = tempMgr->readStored();
         Temperatures avg = tempMgr->getRollingAverage();
 
         doc["timestamp"] = lastLoggedTime;          // The timestamp of the ACTUAL last save
@@ -155,8 +162,6 @@ void WebManager::setupRoutes()
         } else {
         request->send(404, "text/plain", "Not Found");
         } });
-
-    
 
     // Map URL /static/index.html -> FS file /index.html
     server->serveStatic("/style.css", StaticFS, "/style.css");

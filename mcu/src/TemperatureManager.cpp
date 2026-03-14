@@ -9,25 +9,26 @@ const char *keys[] = {
     INTERNAL_PROBE_KEY,
     AMBIENT_PROBE_KEY};
 
-TemperatureManager::TemperatureManager(uint8_t pin)
+TemperatureManager::TemperatureManager(uint8_t pin): oneWire(pin), sensors(&oneWire)
 {
-    oneWire = new OneWire(pin);
-    sensors = new DallasTemperature(oneWire);
 }
 
 void TemperatureManager::begin()
 {
-    sensors->begin();
+    sensors.begin();
     prefs.begin("coolvial-conf", false);
     loadAddressesFromNVS();
 
-
-    Serial.printf("%d devices connected, and %d DS18.\n", sensors->getDeviceCount(), sensors->getDS18Count());
+    Serial.printf("%d devices connected, and %d DS18.\n", sensors.getDeviceCount(), sensors.getDS18Count());
 
     // Initial priming of the buffer
-    Temperatures initial = readInstant();
+    sensors.setWaitForConversion(true);
+    requestNewScan();
+    Temperatures initial = readStored();
     for (int i = 0; i < BUFFER_SIZE; i++)
         buffer[i] = initial;
+
+    sensors.setWaitForConversion(false);
 }
 
 void TemperatureManager::loadAddressesFromNVS() {
@@ -51,19 +52,17 @@ void TemperatureManager::assignSensorToRole(DeviceAddress addr, Role role) {
     Serial.printf("Role %d assigned and active.\n", idx);
 }
 
-Temperatures TemperatureManager::readInstant()
+Temperatures TemperatureManager::readStored()
 {
-    sensors->requestTemperatures();
-
     Temperatures t;
-    t.blockTemp = sensors->getTempC(blockAddr);
-    t.internalTemp = sensors->getTempC(internalAddr);
-    t.ambientTemp = sensors->getTempC(ambientAddr);
+    t.blockTemp = sensors.getTempC(blockAddr);
+    t.internalTemp = sensors.getTempC(internalAddr);
+    t.ambientTemp = sensors.getTempC(ambientAddr);
 
     // Fallback: If address not found, use index (for initial setup)
     if (t.blockTemp == DEVICE_DISCONNECTED_C)
     {
-        t.blockTemp = sensors->getTempCByIndex(0);
+        t.blockTemp = sensors.getTempCByIndex(0);
     }
 
     return t;
@@ -100,10 +99,10 @@ void TemperatureManager::startDiscovery(Role role)
     _searchStartTime = millis();
 
     // Capture baseline for whatever probes are currently plugged in (max 3)
-    sensors->requestTemperatures();
+    sensors.requestTemperatures();
     for (int i = 0; i < 3; i++)
     {
-        _baselines[i] = sensors->getTempCByIndex(i);
+        _baselines[i] = sensors.getTempCByIndex(i);
     }
 
     _state = DiscoveryState::SEARCHING;
@@ -126,16 +125,16 @@ void TemperatureManager::updateDiscovery()
         return;
     }
 
-    sensors->requestTemperatures();
+    sensors.requestTemperatures();
     for (int i = 0; i < 3; i++)
     {
-        float current = sensors->getTempCByIndex(i);
+        float current = sensors.getTempCByIndex(i);
 
         // If this probe spiked > 3°C from its own baseline
         if (current - _baselines[i] > 3.0f)
         {
             DeviceAddress foundAddr;
-            sensors->getAddress(foundAddr, i);
+            sensors.getAddress(foundAddr, i);
 
             assignSensorToRole(foundAddr, _activeSearch);
 
