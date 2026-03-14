@@ -9,13 +9,22 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <button class="mode-toggle" onclick="toggleMode()">🌓 Mode</button>
+        <div class="header-buttons">
+            <button class="mode-toggle" onclick="toggleMode()">🌓 Mode</button>
+            <button class="mode-toggle" onclick="window.location.href='/config'">🛠️ Config</button>
+        </div>
     
         <div class="card">
             <h2><span id="status" class="status-dot"></span>Live Monitor</h2>
             <div class="stat-grid">
-                <div><div id="curTemp" class="stat-val">--</div><div>Current</div></div>
-                <div><div id="avgTemp" class="stat-val">--</div><div>Rolling Avg</div></div>
+                <div><div>Current</div><div id="curBlkTemp" class="stat-val">--</div></div>
+                <div><div>Internal</div><div id="curIntTemp" class="stat-val">--</div></div>
+                <div><div>Ambient</div><div id="curAmbTemp" class="stat-val">--</div></div>
+            </div>
+            <div class="stat-grid">
+                <div><div id="avgBlkTemp" class="stat-avg-val">--</div></div>
+                <div><div id="avgIntTemp" class="stat-avg-val">--</div></div>
+                <div><div id="avgAmbTemp" class="stat-avg-val">--</div></div>
             </div>
             <div class="sync-label">Last Logged: <span id="lastSyncTime">-</span></div>
         </div>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoolVial Configuration</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header-buttons">
+            <!-- <button class="mode-toggle" onclick="toggleMode()">🌓 Mode</button> -->
+            <button class="mode-toggle" onclick="window.location.href='/'">🏡 Dashboard</button>
+        </div>
+    
+        <div class="card">
+            <h2>PID & Thermal Tuning</h2>
+            <div class="config-grid">
+                <div class="input-group">
+                    <label>Target Temp (°C)</label>
+                    <input type="number" id="setpoint" step="0.1" value="20.0">
+                </div>
+                <div class="input-group">
+                    <label>Proportional (Kp)</label>
+                    <input type="number" id="kp" step="0.1" value="30.0">
+                </div>
+                <div class="input-group">
+                    <label>Integral (Ki)</label>
+                    <input type="number" id="ki" step="0.1" value="0.5">
+                </div>
+                <div class="input-group">
+                    <label>Derivative (Kd)</label>
+                    <input type="number" id="kd" step="0.1" value="15.0">
+                </div>
+            </div>
+            <button class="save-btn" onclick="saveConfig()">Save Settings</button>
+            <div id="saveStatus" class="sync-label"></div>
+        </div>
+
+        <div class="card">
+            <h2>Probe Assignment</h2>
+            <p style="font-size: 0.9em; opacity: 0.8;">Click an assign button, then pinch the corresponding physical probe. The system will lock it in when a 3°C spike is detected.</p>
+            
+            <div class="probe-list">
+                <div class="probe-row">
+                    <span><strong>Block Probe</strong> (Main 173g Mass)</span>
+                    <button class="assign-btn" onclick="startAssignment(0)">Assign Block</button>
+                </div>
+                <div class="probe-row">
+                    <span><strong>Internal Probe</strong> (Electronics)</span>
+                    <button class="assign-btn" onclick="startAssignment(1)">Assign Internal</button>
+                </div>
+                <div class="probe-row">
+                    <span><strong>Ambient Probe</strong> (External)</span>
+                    <button class="assign-btn" onclick="startAssignment(2)">Assign Ambient</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+</body>
+</html>

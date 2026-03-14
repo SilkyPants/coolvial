@@ -77,8 +77,15 @@ function changePage(step) {
 
 async function updateLive() {
   const dot = document.getElementById("status");
-  const curTempElem = document.getElementById("curTemp");
-  const avgTempElem = document.getElementById("avgTemp");
+  
+  const curTempElem = document.getElementById("curBlkTemp");
+  const avgTempElem = document.getElementById("avgBlkTemp");
+
+  const curInternalTempElem = document.getElementById("curIntTemp");
+  const avgInternalTempElem = document.getElementById("avgIntTemp");
+
+  const curAmbientTempElem = document.getElementById("curAmbTemp");
+  const avgAmbientTempElem = document.getElementById("avgAmbTemp");
 
   try {
     const res = await fetch("/api/data");
@@ -93,8 +100,14 @@ async function updateLive() {
       dot.className = "status-dot status-online sync-flash";
     }
 
-    if (curTempElem) curTempElem.innerText = info.lastTemp.toFixed(2) + " °C";
-    if (avgTempElem) avgTempElem.innerText = info.avgTemp.toFixed(2) + " °C";
+    if (curTempElem) curTempElem.innerText = info.current.block.toFixed(2) + " °C";
+    if (avgTempElem) avgTempElem.innerText = info.average.block.toFixed(2) + " °C";
+
+    if (curInternalTempElem) curInternalTempElem.innerText = info.current.internal.toFixed(2) + " °C";
+    if (avgInternalTempElem) avgInternalTempElem.innerText = info.average.internal.toFixed(2) + " °C";
+
+    if (curAmbientTempElem) curAmbientTempElem.innerText = info.current.ambient.toFixed(2) + " °C";
+    if (avgAmbientTempElem) avgAmbientTempElem.innerText = info.average.ambient.toFixed(2) + " °C";
 
     // OPTION B: Only update if the timestamp is newer
     // Safety: Ensure allDataRows exists and we have a valid timestamp
